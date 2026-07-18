@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>KultVibe.API</RootNamespace>
+    <UserSecretsId>kultvibe-api-secrets</UserSecretsId>
+    <!-- SmarterASP.NET is IIS-hosted. InProcess keeps the app inside the IIS worker process (w3wp.exe) -
+         faster than OutOfProcess and the standard choice for shared IIS hosting. dotnet publish
+         auto-generates web.config with this setting baked in. -->
+    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KultVibe.Application\KultVibe.Application.csproj" />
+    <ProjectReference Include="..\KultVibe.Infrastructure\KultVibe.Infrastructure.csproj" />
+    <ProjectReference Include="..\KultVibe.Shared\KultVibe.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

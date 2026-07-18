@@ -1,0 +1,28 @@
+{
+  "_comment": "TEMPLATE ONLY - copy to appsettings.Production.json (gitignored) and fill in real values. Never commit the filled-in version.",
+
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=SQL1002.site4now.net;Database=db_acc2ec_kultvibes;User Id=db_acc2ec_kultvibes_admin;Password=REPLACE_ME;TrustServerCertificate=True;"
+  },
+
+  "Jwt": {
+    "Secret": "REPLACE_ME_256_BIT_RANDOM_STRING",
+    "Issuer": "https://kultvibe-001-site1.ftempurl.com",
+    "Audience": "https://kultvibe.com"
+  },
+
+  "Brevo": {
+    "ApiKey": "REPLACE_ME",
+    "FromEmail": "noreply@kultvibe.com",
+    "FromName": "KultVibe"
+  },
+
+  "Admin": {
+    "Username": "REPLACE_ME",
+    "Password": "REPLACE_ME_STRONG_UNIQUE_PASSWORD"
+  },
+
+  "CORS": {
+    "AllowedOrigins": "https://kultvibe.com,https://kultvibe.vercel.app"
+  }
+}

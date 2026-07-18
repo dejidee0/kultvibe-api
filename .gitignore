@@ -427,3 +427,10 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+## KultVibe: production secrets & SmarterASP Web Deploy credentials - never commit these
+appsettings.Production.json
+appsettings.*.local.json
+src/KultVibe.API/Properties/PublishProfiles/*.pubxml
+src/KultVibe.API/Properties/PublishProfiles/*.PublishSettings
+*.PublishSettings

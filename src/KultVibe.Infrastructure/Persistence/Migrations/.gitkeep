@@ -1,0 +1,5 @@
+This folder is intentionally empty until you run:
+
+  dotnet ef migrations add InitialCreate --project src/KultVibe.Infrastructure --startup-project src/KultVibe.API
+
+See the root README for the full setup sequence.
