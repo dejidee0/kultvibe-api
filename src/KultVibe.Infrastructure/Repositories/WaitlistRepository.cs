@@ -27,6 +27,12 @@ public class WaitlistRepository : IWaitlistRepository
         await _db.SaveChangesAsync(ct);
     }
 
+    public async Task UpdateAsync(WaitlistEntry entry, CancellationToken ct = default)
+    {
+        _db.Entry(entry).State = EntityState.Modified;
+        await _db.SaveChangesAsync(ct);
+    }
+
     public async Task DeleteAsync(WaitlistEntry entry, CancellationToken ct = default)
     {
         _db.WaitlistEntries.Remove(entry);
