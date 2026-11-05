@@ -6,6 +6,7 @@ using KultVibe.Infrastructure;
 using KultVibe.Infrastructure.Persistence;
 using KultVibe.Shared.Constants;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
