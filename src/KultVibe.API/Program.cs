@@ -17,7 +17,9 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // ---- Admin Basic Auth (Phase 1 only - replaced by JWT/Role=Admin in Phase 2) ----
-builder.Services.Configure<AdminBasicAuthOptions>(builder.Configuration.GetSection(AdminBasicAuthOptions.SectionName));
+builder.Services.Configure<AdminBasicAuthOptions>(
+    AdminBasicAuthHandler.SchemeName,
+    builder.Configuration.GetSection(AdminBasicAuthOptions.SectionName));
 builder.Services
     .AddAuthentication(AdminBasicAuthHandler.SchemeName)
     .AddScheme<AdminBasicAuthOptions, AdminBasicAuthHandler>(AdminBasicAuthHandler.SchemeName, _ => { });
