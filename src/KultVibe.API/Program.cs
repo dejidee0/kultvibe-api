@@ -9,6 +9,7 @@ using KultVibe.Shared.Wrappers;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -109,6 +110,42 @@ using (var scope = app.Services.CreateScope())
 
 // ---- Middleware pipeline ----
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+// ACME challenge files must be reachable without HTTPS redirects or authentication.
+PhysicalFileProvider? wellKnownFiles = null;
+try
+{
+    var wellKnownPath = Path.Combine(app.Environment.ContentRootPath, ".well-known");
+    Directory.CreateDirectory(wellKnownPath);
+    wellKnownFiles = new PhysicalFileProvider(wellKnownPath);
+    app.Lifetime.ApplicationStopped.Register(wellKnownFiles.Dispose);
+}
+catch
+{
+    wellKnownFiles?.Dispose();
+    wellKnownFiles = null;
+    app.Logger.LogWarning("ACME file serving could not be initialized.");
+}
+
+app.UseWhen(context => context.Request.Path.StartsWithSegments("/.well-known"), branch =>
+{
+    if (wellKnownFiles is not null)
+    {
+        branch.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = wellKnownFiles,
+            RequestPath = "/.well-known",
+            ServeUnknownFileTypes = true
+        });
+    }
+
+    // Missing files also bypass the rest of the pipeline, including HTTPS redirection.
+    branch.Run(context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return Task.CompletedTask;
+    });
+});
 
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
 {
