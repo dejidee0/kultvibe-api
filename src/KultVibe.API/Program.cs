@@ -5,8 +5,11 @@ using KultVibe.Application;
 using KultVibe.Infrastructure;
 using KultVibe.Infrastructure.Persistence;
 using KultVibe.Shared.Constants;
+using KultVibe.Shared.Wrappers;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,7 +18,9 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // ---- Admin Basic Auth (Phase 1 only - replaced by JWT/Role=Admin in Phase 2) ----
-builder.Services.Configure<AdminBasicAuthOptions>(builder.Configuration.GetSection(AdminBasicAuthOptions.SectionName));
+builder.Services.Configure<AdminBasicAuthOptions>(
+    AdminBasicAuthHandler.SchemeName,
+    builder.Configuration.GetSection(AdminBasicAuthOptions.SectionName));
 builder.Services
     .AddAuthentication(AdminBasicAuthHandler.SchemeName)
     .AddScheme<AdminBasicAuthOptions, AdminBasicAuthHandler>(AdminBasicAuthHandler.SchemeName, _ => { });
@@ -51,13 +56,25 @@ builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    options.AddFixedWindowLimiter(RateLimitPolicies.WaitlistSignup, opts =>
+    options.OnRejected = async (context, cancellationToken) =>
     {
-        opts.PermitLimit = 5;
-        opts.Window = TimeSpan.FromHours(1);
-        opts.QueueLimit = 0;
-        opts.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-    });
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            ApiResponse.FailureResponse("Too many signup attempts. Please try again later."),
+            cancellationToken);
+    };
+
+    options.AddPolicy(RateLimitPolicies.WaitlistSignup, context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromHours(1),
+                QueueLimit = 0,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                AutoReplenishment = true
+            }));
 });
 
 // ---- Controllers, Swagger ----
@@ -94,7 +111,43 @@ using (var scope = app.Services.CreateScope())
 // ---- Middleware pipeline ----
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-if (app.Environment.IsDevelopment())
+// ACME challenge files must be reachable without HTTPS redirects or authentication.
+PhysicalFileProvider? wellKnownFiles = null;
+try
+{
+    var wellKnownPath = Path.Combine(app.Environment.ContentRootPath, ".well-known");
+    Directory.CreateDirectory(wellKnownPath);
+    wellKnownFiles = new PhysicalFileProvider(wellKnownPath);
+    app.Lifetime.ApplicationStopped.Register(wellKnownFiles.Dispose);
+}
+catch
+{
+    wellKnownFiles?.Dispose();
+    wellKnownFiles = null;
+    app.Logger.LogWarning("ACME file serving could not be initialized.");
+}
+
+app.UseWhen(context => context.Request.Path.StartsWithSegments("/.well-known"), branch =>
+{
+    if (wellKnownFiles is not null)
+    {
+        branch.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = wellKnownFiles,
+            RequestPath = "/.well-known",
+            ServeUnknownFileTypes = true
+        });
+    }
+
+    // Missing files also bypass the rest of the pipeline, including HTTPS redirection.
+    branch.Run(context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return Task.CompletedTask;
+    });
+});
+
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();

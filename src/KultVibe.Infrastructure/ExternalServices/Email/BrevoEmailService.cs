@@ -38,12 +38,8 @@ public class BrevoEmailService : IEmailService
             sender = new { email = _options.FromEmail, name = _options.FromName },
             to = new[] { new { email = toEmail, name = toName } },
             subject = "You're on the KultVibe waitlist \ud83d\udd25",
-            htmlContent = $"""
-                <p>Hey {toName},</p>
-                <p>You're officially on the KultVibe waitlist. Your Culture. Your Stage. Your Money.</p>
-                <p>We'll email you the moment your access opens up.</p>
-                <p>&mdash; The KultVibe Team</p>
-                """
+            htmlContent = WaitlistConfirmationTemplate.Html(toName),
+            textContent = WaitlistConfirmationTemplate.Text(toName)
         };
 
         var response = await _httpClient.PostAsJsonAsync("smtp/email", payload, ct);

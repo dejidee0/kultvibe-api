@@ -434,3 +434,4 @@ appsettings.*.local.json
 src/KultVibe.API/Properties/PublishProfiles/*.pubxml
 src/KultVibe.API/Properties/PublishProfiles/*.PublishSettings
 *.PublishSettings
+publish-out/

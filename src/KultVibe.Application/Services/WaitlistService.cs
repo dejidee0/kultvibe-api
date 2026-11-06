@@ -63,6 +63,7 @@ public sealed class WaitlistService : IWaitlistService
         {
             await _emailService.SendWaitlistConfirmationAsync(entry.Email, entry.FullName, ct);
             entry.ConfirmationEmailSent = true;
+            await _repository.UpdateAsync(entry, ct);
         }
         catch (Exception ex)
         {
