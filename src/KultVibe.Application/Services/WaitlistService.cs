@@ -1,6 +1,7 @@
 using FluentValidation;
 using KultVibe.Application.DTOs.Waitlist;
 using KultVibe.Application.Interfaces;
+using KultVibe.Domain.Common;
 using KultVibe.Domain.Entities;
 using KultVibe.Domain.Enums;
 using KultVibe.Domain.Exceptions;
@@ -44,14 +45,27 @@ public sealed class WaitlistService : IWaitlistService
             throw new ConflictException("This email is already on the waitlist");
         }
 
-        var vertical = Enum.Parse<Vertical>(request.PrimaryVertical, ignoreCase: true);
+        var userType = request.UserType is null
+            ? UserType.Gamer
+            : Enum.Parse<UserType>(request.UserType.Trim(), ignoreCase: true);
+        var interests = (request.Interests ?? Array.Empty<string>())
+            .Select(value => WaitlistInterests.AllowedValues.First(allowed =>
+                string.Equals(allowed, value.Trim(), StringComparison.OrdinalIgnoreCase)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
         var entry = new WaitlistEntry
         {
             FullName = request.FullName.Trim(),
             Email = normalizedEmail,
             GamerTag = string.IsNullOrWhiteSpace(request.GamerTag) ? null : request.GamerTag.Trim(),
-            PrimaryVertical = vertical,
+            UserType = userType,
+            PrimaryGame = string.IsNullOrWhiteSpace(request.PrimaryGame) ? null : request.PrimaryGame.Trim(),
+            CompanyName = string.IsNullOrWhiteSpace(request.CompanyName) ? null : request.CompanyName.Trim(),
+            Interests = interests.Length == 0 ? null : string.Join(",", interests),
+            PrimaryVertical = request.PrimaryVertical is null
+                ? null
+                : Enum.Parse<Vertical>(request.PrimaryVertical.Trim(), ignoreCase: true),
             ReferralCode = string.IsNullOrWhiteSpace(request.ReferralCode) ? null : request.ReferralCode.Trim()
         };
 
@@ -105,7 +119,12 @@ public sealed class WaitlistService : IWaitlistService
                 FullName = e.FullName,
                 Email = e.Email,
                 GamerTag = e.GamerTag,
-                PrimaryVertical = e.PrimaryVertical.ToString(),
+                UserType = e.UserType.ToString(),
+                PrimaryGame = e.PrimaryGame,
+                CompanyName = e.CompanyName,
+                Interests = e.Interests?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    ?? Array.Empty<string>(),
+                PrimaryVertical = e.PrimaryVertical?.ToString(),
                 ReferralCode = e.ReferralCode,
                 ConfirmationEmailSent = e.ConfirmationEmailSent,
                 CreatedAt = e.CreatedAt
