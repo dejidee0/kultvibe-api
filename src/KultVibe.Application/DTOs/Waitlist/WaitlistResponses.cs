@@ -27,7 +27,11 @@ public sealed class WaitlistAdminEntryDto
     public string FullName { get; init; } = string.Empty;
     public string Email { get; init; } = string.Empty;
     public string? GamerTag { get; init; }
-    public string PrimaryVertical { get; init; } = string.Empty;
+    public string UserType { get; init; } = string.Empty;
+    public string? PrimaryGame { get; init; }
+    public string? CompanyName { get; init; }
+    public string[] Interests { get; init; } = Array.Empty<string>();
+    public string? PrimaryVertical { get; init; }
     public string? ReferralCode { get; init; }
     public bool ConfirmationEmailSent { get; init; }
     public DateTime CreatedAt { get; init; }

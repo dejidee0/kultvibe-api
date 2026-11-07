@@ -1,4 +1,5 @@
 using KultVibe.Domain.Entities;
+using KultVibe.Application.DTOs.Waitlist;
 using KultVibe.Shared.Wrappers;
 
 namespace KultVibe.Application.Interfaces;
@@ -11,6 +12,7 @@ public interface IWaitlistRepository
     Task UpdateAsync(WaitlistEntry entry, CancellationToken ct = default);
     Task DeleteAsync(WaitlistEntry entry, CancellationToken ct = default);
     Task<int> CountAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<WaitlistSummaryRow>> GetSummaryRowsAsync(CancellationToken ct = default);
     Task<PagedResult<WaitlistEntry>> GetPagedAsync(int page, int pageSize, CancellationToken ct = default);
     Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default);
 }

@@ -1,4 +1,5 @@
 using KultVibe.Domain.Entities;
+using KultVibe.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -29,7 +30,22 @@ public class WaitlistEntryConfiguration : IEntityTypeConfiguration<WaitlistEntry
         builder.Property(w => w.PrimaryVertical)
             .HasConversion<string>()
             .HasMaxLength(50)
+            .IsRequired(false);
+
+        builder.Property(w => w.UserType)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .HasDefaultValue(UserType.Gamer)
             .IsRequired();
+
+        builder.Property(w => w.PrimaryGame)
+            .HasMaxLength(100);
+
+        builder.Property(w => w.CompanyName)
+            .HasMaxLength(150);
+
+        builder.Property(w => w.Interests)
+            .HasMaxLength(200);
 
         builder.Property(w => w.ReferralCode)
             .HasMaxLength(20);

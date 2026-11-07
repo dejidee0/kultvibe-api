@@ -28,6 +28,15 @@ public class AdminController : ControllerBase
         return Ok(ApiResponse<PagedResult<WaitlistAdminEntryDto>>.SuccessResponse(result));
     }
 
+    /// <summary>Waitlist totals by user type, interest, game and legacy category. CEO only.</summary>
+    [HttpGet("waitlist/summary")]
+    [ProducesResponseType(typeof(ApiResponse<WaitlistSummaryResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetWaitlistSummary(CancellationToken ct)
+    {
+        var result = await _waitlistService.GetSummaryAsync(ct);
+        return Ok(ApiResponse<WaitlistSummaryResponse>.SuccessResponse(result));
+    }
+
     /// <summary>Remove a waitlist entry. CEO only.</summary>
     [HttpDelete("waitlist/{id:guid}")]
     [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]

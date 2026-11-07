@@ -1,6 +1,7 @@
 using FluentValidation;
 using KultVibe.Application.DTOs.Waitlist;
 using KultVibe.Application.Interfaces;
+using KultVibe.Domain.Common;
 using KultVibe.Domain.Entities;
 using KultVibe.Domain.Enums;
 using KultVibe.Domain.Exceptions;
@@ -44,14 +45,27 @@ public sealed class WaitlistService : IWaitlistService
             throw new ConflictException("This email is already on the waitlist");
         }
 
-        var vertical = Enum.Parse<Vertical>(request.PrimaryVertical, ignoreCase: true);
+        var userType = request.UserType is null
+            ? UserType.Gamer
+            : Enum.Parse<UserType>(request.UserType.Trim(), ignoreCase: true);
+        var interests = (request.Interests ?? Array.Empty<string>())
+            .Select(value => WaitlistInterests.AllowedValues.First(allowed =>
+                string.Equals(allowed, value.Trim(), StringComparison.OrdinalIgnoreCase)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
         var entry = new WaitlistEntry
         {
             FullName = request.FullName.Trim(),
             Email = normalizedEmail,
             GamerTag = string.IsNullOrWhiteSpace(request.GamerTag) ? null : request.GamerTag.Trim(),
-            PrimaryVertical = vertical,
+            UserType = userType,
+            PrimaryGame = string.IsNullOrWhiteSpace(request.PrimaryGame) ? null : request.PrimaryGame.Trim(),
+            CompanyName = string.IsNullOrWhiteSpace(request.CompanyName) ? null : request.CompanyName.Trim(),
+            Interests = interests.Length == 0 ? null : string.Join(",", interests),
+            PrimaryVertical = request.PrimaryVertical is null
+                ? null
+                : Enum.Parse<Vertical>(request.PrimaryVertical.Trim(), ignoreCase: true),
             ReferralCode = string.IsNullOrWhiteSpace(request.ReferralCode) ? null : request.ReferralCode.Trim()
         };
 
@@ -84,6 +98,33 @@ public sealed class WaitlistService : IWaitlistService
         return new WaitlistCountResponse { Count = count };
     }
 
+    public async Task<WaitlistSummaryResponse> GetSummaryAsync(CancellationToken ct = default)
+    {
+        var rows = await _repository.GetSummaryRowsAsync(ct);
+
+        return new WaitlistSummaryResponse
+        {
+            Total = rows.Count,
+            ByUserType = Enum.GetValues<UserType>().ToDictionary(
+                type => type.ToString(), type => rows.Count(row => row.UserType == type)),
+            ByInterest = WaitlistInterests.AllowedValues.ToDictionary(
+                interest => interest,
+                interest => rows.Count(row => (row.Interests?.Split(',',
+                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    ?? Array.Empty<string>()).Contains(interest, StringComparer.OrdinalIgnoreCase))),
+            TopGames = rows.Where(row => !string.IsNullOrWhiteSpace(row.PrimaryGame))
+                .GroupBy(row => row.PrimaryGame!.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(group => new WaitlistGameCountDto { Game = group.Key, Count = group.Count() })
+                .OrderByDescending(game => game.Count)
+                .ThenBy(game => game.Game, StringComparer.OrdinalIgnoreCase)
+                .Take(10)
+                .ToList(),
+            ByLegacyVertical = rows.Where(row => row.PrimaryVertical.HasValue)
+                .GroupBy(row => row.PrimaryVertical!.Value)
+                .ToDictionary(group => group.Key.ToString(), group => group.Count())
+        };
+    }
+
     public async Task<WaitlistExistsResponse> CheckExistsAsync(string email, CancellationToken ct = default)
     {
         var exists = await _repository.ExistsByEmailAsync(email.Trim().ToLowerInvariant(), ct);
@@ -105,7 +146,12 @@ public sealed class WaitlistService : IWaitlistService
                 FullName = e.FullName,
                 Email = e.Email,
                 GamerTag = e.GamerTag,
-                PrimaryVertical = e.PrimaryVertical.ToString(),
+                UserType = e.UserType.ToString(),
+                PrimaryGame = e.PrimaryGame,
+                CompanyName = e.CompanyName,
+                Interests = e.Interests?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    ?? Array.Empty<string>(),
+                PrimaryVertical = e.PrimaryVertical?.ToString(),
                 ReferralCode = e.ReferralCode,
                 ConfirmationEmailSent = e.ConfirmationEmailSent,
                 CreatedAt = e.CreatedAt
