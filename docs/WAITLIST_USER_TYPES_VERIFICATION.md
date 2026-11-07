@@ -18,7 +18,68 @@ Updated: 2026-11-07.
 
 ## Remaining gates
 
-- A6 live compatibility, validation, admin summary, cleanup, Swagger and CORS tests: pending.
+- A6 live compatibility, validation, admin summary, cleanup, Swagger and CORS tests: passed.
 - A7 product decisions and status documentation: pending.
 - A8 backend main merge: pending all live tests.
 - Parts B and C: not started; gated on completion of the preceding part.
+
+## A6: live test results
+
+The owner-authorized replacement address was used for the legacy payload. Eight signup POSTs created four rows, all deleted. Starting count: 2; ending count: 2. No rate-limit test was run and no 429 was received. The two existing entries were preserved.
+
+| Check | Expected | Actual | Result |
+|---|---|---|---|
+| 1. Old payload | 201 | 201 | PASS |
+| 2. New Gamer | 201 | 201 | PASS |
+| 3. New Creator | 201 | 201 | PASS |
+| 4. New Brand | 201 | 201 | PASS |
+| 5. Brand requires company | 400 | 400 | PASS |
+| 6. Invalid user type | 400 | 400 | PASS |
+| 7. Invalid interest | 400 | 400 | PASS |
+| 8. Duplicate Gamer | 409 | 409 | PASS |
+| 9a. Admin fields and old-payload default | 200 | 200 | PASS |
+| 9b. Summary counts | 200 | 200 | PASS |
+| 9c. Summary requires authentication | 401 | 401 | PASS |
+| 10. Delete own Brand test row | 200 | 200 | PASS |
+| 10. Delete own Creator test row | 200 | 200 | PASS |
+| 10. Delete own Gamer test row | 200 | 200 | PASS |
+| 10. Delete own Gamer test row | 200 | 200 | PASS |
+| 10. Starting count restored | 200 | 200 | PASS |
+| 11a. Swagger UI | 200 | 200 | PASS |
+| 11b. Swagger fields and nullable legacy category | 200 | 200 | PASS |
+| 11c. Canonical frontend CORS | 200/204 and matching origin | 204 | PASS |
+
+Summary response while the four test rows existed:
+
+```json
+{
+  "success": true,
+  "data": {
+    "total": 6,
+    "byUserType": {
+      "Gamer": 4,
+      "Creator": 1,
+      "Brand": 1
+    },
+    "byInterest": {
+      "Music": 1,
+      "Tech": 0,
+      "Lifestyle": 0
+    },
+    "topGames": [
+      {
+        "game": "COD Mobile",
+        "count": 1
+      }
+    ],
+    "byLegacyVertical": {
+      "Gaming": 2,
+      "Creator": 1
+    }
+  },
+  "message": "Operation successful",
+  "errors": null
+}
+```
+
+Swagger confirmed userType, primaryGame, companyName, interests and nullable primaryVertical on both request and admin-entry schemas, plus the summary route. The summary endpoint also returned 401 without admin authentication. Canonical frontend preflight returned 204 with the matching https://www.kultvibe.com origin.
