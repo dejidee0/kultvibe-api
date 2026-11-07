@@ -1,4 +1,5 @@
 using KultVibe.Application.Interfaces;
+using KultVibe.Application.DTOs.Waitlist;
 using KultVibe.Domain.Entities;
 using KultVibe.Infrastructure.Persistence;
 using KultVibe.Shared.Wrappers;
@@ -41,6 +42,17 @@ public class WaitlistRepository : IWaitlistRepository
 
     public Task<int> CountAsync(CancellationToken ct = default)
         => _db.WaitlistEntries.CountAsync(ct);
+
+    public async Task<IReadOnlyList<WaitlistSummaryRow>> GetSummaryRowsAsync(CancellationToken ct = default)
+        => await _db.WaitlistEntries.AsNoTracking()
+            .Select(entry => new WaitlistSummaryRow
+            {
+                UserType = entry.UserType,
+                PrimaryGame = entry.PrimaryGame,
+                Interests = entry.Interests,
+                PrimaryVertical = entry.PrimaryVertical
+            })
+            .ToListAsync(ct);
 
     public Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default)
         => _db.WaitlistEntries.AnyAsync(w => w.Email == email, ct);

@@ -7,6 +7,7 @@ public interface IWaitlistService
 {
     Task<WaitlistSignupResponse> SignupAsync(WaitlistSignupRequest request, CancellationToken ct = default);
     Task<WaitlistCountResponse> GetCountAsync(CancellationToken ct = default);
+    Task<WaitlistSummaryResponse> GetSummaryAsync(CancellationToken ct = default);
     Task<WaitlistExistsResponse> CheckExistsAsync(string email, CancellationToken ct = default);
     Task<PagedResult<WaitlistAdminEntryDto>> GetAdminListAsync(int page, int pageSize, CancellationToken ct = default);
     Task DeleteEntryAsync(Guid id, CancellationToken ct = default);
