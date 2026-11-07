@@ -20,7 +20,7 @@ Updated: 2026-11-07.
 
 - A6 live compatibility, validation, admin summary, cleanup, Swagger and CORS tests: passed.
 - A7 product decisions and status documentation: completed, dated 2026-11-07 and recording the owner's 2026-11-06 direction.
-- A8 backend main merge: pending all live tests.
+- A8 gate: all A6 live tests passed; backend release is authorized. Final merge hashes are recorded in the release report.
 - Parts B and C: not started; gated on completion of the preceding part.
 
 ## A6: live test results
