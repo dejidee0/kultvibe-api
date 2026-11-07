@@ -1,5 +1,6 @@
 using FluentValidation;
 using KultVibe.Application.DTOs.Waitlist;
+using KultVibe.Domain.Common;
 using KultVibe.Domain.Enums;
 
 namespace KultVibe.Application.Validators;
@@ -11,6 +12,7 @@ namespace KultVibe.Application.Validators;
 public sealed class WaitlistSignupRequestValidator : AbstractValidator<WaitlistSignupRequest>
 {
     private static readonly string[] ValidVerticals = Enum.GetNames<Vertical>();
+    private static readonly string[] ValidUserTypes = Enum.GetNames<UserType>();
 
     public WaitlistSignupRequestValidator()
     {
@@ -24,9 +26,29 @@ public sealed class WaitlistSignupRequestValidator : AbstractValidator<WaitlistS
             .MaximumLength(255);
 
         RuleFor(x => x.PrimaryVertical)
-            .NotEmpty().WithMessage("PrimaryVertical is required")
-            .Must(v => ValidVerticals.Contains(v, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Primary vertical must be one of: {string.Join(", ", ValidVerticals)}");
+            .Must(v => ValidVerticals.Contains(v?.Trim(), StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Primary vertical must be one of: {string.Join(", ", ValidVerticals)}")
+            .When(x => x.PrimaryVertical is not null);
+
+        RuleFor(x => x.UserType)
+            .Must(value => ValidUserTypes.Contains(value?.Trim(), StringComparer.OrdinalIgnoreCase))
+            .WithMessage("User type must be one of: Gamer, Creator, Brand")
+            .When(x => x.UserType is not null);
+
+        RuleFor(x => x.PrimaryGame)
+            .MaximumLength(100);
+
+        RuleFor(x => x.CompanyName)
+            .NotEmpty().WithMessage("Company name is required for brands")
+            .When(x => string.Equals(x.UserType?.Trim(), nameof(UserType.Brand), StringComparison.OrdinalIgnoreCase));
+
+        RuleFor(x => x.CompanyName)
+            .MaximumLength(150);
+
+        RuleFor(x => x.Interests)
+            .Must(values => values is null || (values.Length <= 3 && values.All(value =>
+                WaitlistInterests.AllowedValues.Contains(value?.Trim(), StringComparer.OrdinalIgnoreCase))))
+            .WithMessage("Interests must be any of: Music, Tech, Lifestyle");
 
         RuleFor(x => x.GamerTag)
             .MaximumLength(50);
